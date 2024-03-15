@@ -18,11 +18,15 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -89,6 +93,33 @@ public class ReconController {
                     .body(outputStream.toByteArray());
 
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @PostMapping("/test3")
+    public Map<String, String> test3(@RequestParam("file1") MultipartFile excelFile1,
+                                        @RequestParam("file2") MultipartFile excelFile2) {
+        try (Workbook workbook1 = WorkbookFactory.create(excelFile1.getInputStream());
+             Workbook workbook2 = WorkbookFactory.create(excelFile2.getInputStream());
+             Workbook workbook3 = new XSSFWorkbook()) {
+
+            Sheet sheet1 = workbook1.getSheetAt(0);
+            Sheet sheet2 = workbook2.getSheetAt(0);
+
+            List<String> excel1Headers = new ArrayList<>();
+            List<String> excel2Headers = new ArrayList<>();
+
+            evaluateHeaders(sheet1, excel1Headers, sheet2, excel2Headers);
+
+            // make similar header map
+            Map<Integer, Integer> header1Header2IntMap = new HashMap<>();
+            Map<String, String> header1Header2StringMap = new HashMap<>();
+            evaluateSimilarHeaderMap(excel1Headers, excel2Headers, sheet1, sheet2, header1Header2IntMap, header1Header2StringMap);
+
+            return header1Header2StringMap;
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return null;
