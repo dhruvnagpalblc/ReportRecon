@@ -290,11 +290,13 @@ public class ReconController {
             double maxJaccardSimilarity = 0;
             String maxWord2VecSimilarityHeader = null;
             String maxJaccardSimilarityHeader = null;
+            boolean wordEqual = false;
             for (String header2 : excel2Headers) {
                 if (header1.equals(header2)
                         || convertToShortForm(header1).equals(convertToShortForm(header2))) {
                     maxWord2VecSimilarityHeader = header2;
                     maxJaccardSimilarityHeader = header2;
+                    wordEqual = true;
                     break;
                 }
                 double jaccardSimilarity = jaccardSimilarityService.calculateJaccardSimilarity(header1, header2);
@@ -315,7 +317,7 @@ public class ReconController {
                 header1Header2IntMap.put(columnNumber1, columnNumber2);
                 header1Header2StringMap.put(header1, maxJaccardSimilarityHeader);
             } else {
-                if (maxWord2VecSimilarityHeader != null && maxWord2VecSimilarity > 0.15) {
+                if (maxWord2VecSimilarityHeader != null && maxWord2VecSimilarity > 0.15 || wordEqual) {
                     int columnNumber1 = getColumnNumber(sheet1.getRow(0), header1);
                     int columnNumber2 = getColumnNumber(sheet2.getRow(0), maxWord2VecSimilarityHeader);
                     header1Header2IntMap.put(columnNumber1, columnNumber2);
