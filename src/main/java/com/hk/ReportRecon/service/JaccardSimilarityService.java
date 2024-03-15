@@ -12,7 +12,12 @@ public class JaccardSimilarityService {
         Set<Character> set1 = tokenizeString(str1);
         Set<Character> set2 = tokenizeString(str2);
 
-        return calculateJaccardSimilarity(set1, set2);
+        double jaccardSimilarity = calculateJaccardSimilarity(set1, set2);
+        boolean isSubtr = str1.contains(str2) || str2.contains(str1);
+        if (isSubtr) {
+            jaccardSimilarity ++;
+        }
+        return jaccardSimilarity ;
     }
 
     private Set<Character> tokenizeString(String str) {

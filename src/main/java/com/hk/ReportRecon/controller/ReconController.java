@@ -256,6 +256,7 @@ public class ReconController {
                 if (header1.equals(header2)
                         || convertToShortForm(header1).equals(convertToShortForm(header2))) {
                     maxWord2VecSimilarityHeader = header2;
+                    maxJaccardSimilarityHeader = header2;
                     break;
                 }
                 double jaccardSimilarity = jaccardSimilarityService.calculateJaccardSimilarity(header1, header2);
@@ -270,13 +271,13 @@ public class ReconController {
                     maxWord2VecSimilarityHeader = header2;
                 }
             }
-            if (maxJaccardSimilarity > 0.5) {
+            if (maxJaccardSimilarity > 0.6) {
                 int columnNumber1 = getColumnNumber(sheet1.getRow(0), header1);
                 int columnNumber2 = getColumnNumber(sheet2.getRow(0), maxJaccardSimilarityHeader);
                 header1Header2IntMap.put(columnNumber1, columnNumber2);
                 header1Header2StringMap.put(header1, maxJaccardSimilarityHeader);
             } else {
-                if (maxWord2VecSimilarityHeader != null) {
+                if (maxWord2VecSimilarityHeader != null && maxWord2VecSimilarity > 0.15) {
                     int columnNumber1 = getColumnNumber(sheet1.getRow(0), header1);
                     int columnNumber2 = getColumnNumber(sheet2.getRow(0), maxWord2VecSimilarityHeader);
                     header1Header2IntMap.put(columnNumber1, columnNumber2);
