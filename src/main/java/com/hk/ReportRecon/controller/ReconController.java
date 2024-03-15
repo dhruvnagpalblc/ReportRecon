@@ -26,8 +26,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -98,12 +98,11 @@ public class ReconController {
         return null;
     }
 
-    @PostMapping("/test3")
+    @PostMapping(value = "/test3", produces = "application/json")
     public Map<String, String> test3(@RequestParam("file1") MultipartFile excelFile1,
                                         @RequestParam("file2") MultipartFile excelFile2) {
         try (Workbook workbook1 = WorkbookFactory.create(excelFile1.getInputStream());
-             Workbook workbook2 = WorkbookFactory.create(excelFile2.getInputStream());
-             Workbook workbook3 = new XSSFWorkbook()) {
+             Workbook workbook2 = WorkbookFactory.create(excelFile2.getInputStream())) {
 
             Sheet sheet1 = workbook1.getSheetAt(0);
             Sheet sheet2 = workbook2.getSheetAt(0);
@@ -119,10 +118,63 @@ public class ReconController {
             evaluateSimilarHeaderMap(excel1Headers, excel2Headers, sheet1, sheet2, header1Header2IntMap, header1Header2StringMap);
 
             return header1Header2StringMap;
-        } catch (IOException e) {
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Collections.emptyMap();
+    }
+
+    @PostMapping("/test4")
+    public ResponseEntity<byte[]> test3(@RequestParam("file1") MultipartFile excelFile1,
+                                        @RequestParam("file2") MultipartFile excelFile2,
+                                        @RequestParam("map") Map<String, String> header1Header2StringMap,
+                                        @RequestParam("primaryKey1") String primaryKey1,
+                                        @RequestParam("primaryKey2") String primaryKey2) {
+        try (Workbook workbook1 = WorkbookFactory.create(excelFile1.getInputStream());
+             Workbook workbook2 = WorkbookFactory.create(excelFile2.getInputStream());
+             Workbook workbook3 = new XSSFWorkbook()) {
+
+            Sheet sheet1 = workbook1.getSheetAt(0);
+            Sheet sheet2 = workbook2.getSheetAt(0);
+
+            // create 3rd excel
+            Sheet sheet3 = workbook3.createSheet();
+
+            createHeadersFor3rdExcel(sheet3, header1Header2StringMap, sheet1);
+
+            Map<Integer, Integer> header1Header2IntMap = getIntMapFromStringMap(header1Header2StringMap, sheet1, sheet2);
+
+            addEntriesIn3rdExcel(header1Header2IntMap, sheet1, sheet3, sheet2, workbook3);
+
+            autoSizeRowsAndColumn(sheet3);
+
+            // Write the workbook to a ByteArrayOutputStream
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            workbook3.write(outputStream);
+
+            // Set the response headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "excel3.xlsx");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(outputStream.toByteArray());
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private Map<Integer, Integer> getIntMapFromStringMap(Map<String, String> header1Header2StringMap, Sheet sheet1, Sheet sheet2) {
+        Map<Integer, Integer> header1Header2IntMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : header1Header2StringMap.entrySet()) {
+            String excel1Header = entry.getKey();
+            String excel2Header = entry.getValue();
+            header1Header2IntMap.put(getColumnNumber(sheet1.getRow(0), excel1Header),
+                    getColumnNumber(sheet2.getRow(0), excel2Header));
+        }
+        return header1Header2IntMap;
     }
 
     private static void addEntriesIn3rdExcel(Map<Integer, Integer> header1Header2IntMap, Sheet sheet1, Sheet sheet3, Sheet sheet2, Workbook workbook3) {
