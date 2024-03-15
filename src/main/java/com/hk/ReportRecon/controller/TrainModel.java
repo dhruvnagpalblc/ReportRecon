@@ -2,7 +2,6 @@ package com.hk.ReportRecon.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -16,17 +15,17 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.File;
 
 @RestController
-@RequestMapping("recon")
+@RequestMapping("train")
 @Slf4j
 public class TrainModel {
+    private static final String FILE_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/corpus.txt";
+    private static final String WORD_2_VEC_FILE = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/GoogleNews-vectors-negative300Copy.bin";
 
     @GetMapping("/train1")
     public void train1() {
 
         try {
-
-            String filePath = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/corpus.txt";
-            SentenceIterator iter = new BasicLineIterator( new File( filePath ) );
+            SentenceIterator iter = new BasicLineIterator( new File(FILE_PATH) );
 
             // Step 2: Configure and train the Word2Vec model
             TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
@@ -35,6 +34,13 @@ public class TrainModel {
             int vectorSize = 100;
             int windowSize = 5;
             int minWordFrequency = 5;
+
+            while (iter.hasNext()) {
+                String sentence = iter.nextSentence();
+                tokenizerFactory.create(sentence);
+            }
+
+            iter.reset();
 
             Word2Vec vec = new Word2Vec.Builder()
                     .minWordFrequency( minWordFrequency )
@@ -49,16 +55,7 @@ public class TrainModel {
             vec.fit();
 
             // Step 3: Save the model (optional)
-            WordVectorSerializer.writeWord2VecModel( vec, "/home/dhruv.nagpal@Brightlifecare.local/Downloads/GoogleNews-vectors-negative300Copy.bin" );
-
-            // Step 4: Use the trained model to find similarities
-            WordVectors wordVectors = WordVectorSerializer.loadStaticModel( new File( "path/to/your/model.bin" ) );
-
-            String word1 = "example";
-            String word2 = "demonstration";
-
-            double similarity = wordVectors.similarity( word1, word2 );
-            System.out.println( "Similarity between '" + word1 + "' and '" + word2 + "': " + similarity );
+            WordVectorSerializer.writeWord2VecModel( vec, WORD_2_VEC_FILE);
         }catch (Exception e){
             e.printStackTrace();
         }

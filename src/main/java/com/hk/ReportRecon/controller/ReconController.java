@@ -17,6 +17,7 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,11 +39,12 @@ import java.util.stream.Collectors;
 @RequestMapping("recon")
 @Slf4j
 public class ReconController {
-
-    private final WordVectors word2Vec;
     private static final String WORD2VEC_MODEL_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/GoogleNews-vectors-negative300.bin";
-    private static final String excel1Path = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/excel1.xlsx";
-    private static final String excel2Path = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/excel2.xlsx";
+    private static final String EXCEL_1_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/excel1.xlsx";
+    private static final String EXCEL_2_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/excel2.xlsx";
+    private final WordVectors word2Vec;
+    private Sheet sheet1;
+    private Sheet sheet2;
 
     ReconController () {
         word2Vec = WordVectorSerializer.readWord2VecModel(WORD2VEC_MODEL_PATH);
@@ -51,14 +53,14 @@ public class ReconController {
     @GetMapping("/test2")
     public ResponseEntity<byte[]> test2() {
         // read 2 excel
-        try (FileInputStream fis1 = new FileInputStream(excel1Path);
-             FileInputStream fis2 = new FileInputStream(excel2Path);
+        try (FileInputStream fis1 = new FileInputStream(EXCEL_1_PATH);
+             FileInputStream fis2 = new FileInputStream(EXCEL_2_PATH);
              Workbook workbook1 = WorkbookFactory.create(fis1);
              Workbook workbook2 = WorkbookFactory.create(fis2);
              Workbook workbook3 = new XSSFWorkbook()) {
 
-            Sheet sheet1 = workbook1.getSheetAt(0);
-            Sheet sheet2 = workbook2.getSheetAt(0);
+            sheet1 = workbook1.getSheetAt(0);
+            sheet2 = workbook2.getSheetAt(0);
 
             List<String> excel1Headers = new ArrayList<>();
             List<String> excel2Headers = new ArrayList<>();
@@ -99,13 +101,14 @@ public class ReconController {
     }
 
     @PostMapping(value = "/test3", produces = "application/json")
+    @CrossOrigin(origins = "http://localhost:3000")
     public Map<String, String> test3(@RequestParam("file1") MultipartFile excelFile1,
                                         @RequestParam("file2") MultipartFile excelFile2) {
         try (Workbook workbook1 = WorkbookFactory.create(excelFile1.getInputStream());
              Workbook workbook2 = WorkbookFactory.create(excelFile2.getInputStream())) {
 
-            Sheet sheet1 = workbook1.getSheetAt(0);
-            Sheet sheet2 = workbook2.getSheetAt(0);
+            sheet1 = workbook1.getSheetAt(0);
+            sheet2 = workbook2.getSheetAt(0);
 
             List<String> excel1Headers = new ArrayList<>();
             List<String> excel2Headers = new ArrayList<>();
@@ -125,18 +128,11 @@ public class ReconController {
     }
 
     @PostMapping("/test4")
-    public ResponseEntity<byte[]> test3(@RequestParam("file1") MultipartFile excelFile1,
-                                        @RequestParam("file2") MultipartFile excelFile2,
-                                        @RequestParam("map") Map<String, String> header1Header2StringMap,
+    @CrossOrigin(origins = "http://localhost:3000")
+    public ResponseEntity<byte[]> test3(@RequestParam("map") Map<String, String> header1Header2StringMap,
                                         @RequestParam("primaryKey1") String primaryKey1,
                                         @RequestParam("primaryKey2") String primaryKey2) {
-        try (Workbook workbook1 = WorkbookFactory.create(excelFile1.getInputStream());
-             Workbook workbook2 = WorkbookFactory.create(excelFile2.getInputStream());
-             Workbook workbook3 = new XSSFWorkbook()) {
-
-            Sheet sheet1 = workbook1.getSheetAt(0);
-            Sheet sheet2 = workbook2.getSheetAt(0);
-
+        try (Workbook workbook3 = new XSSFWorkbook()) {
             // create 3rd excel
             Sheet sheet3 = workbook3.createSheet();
 
