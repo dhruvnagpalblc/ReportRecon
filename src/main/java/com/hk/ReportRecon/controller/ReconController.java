@@ -1,5 +1,7 @@
 package com.hk.ReportRecon.controller;
 
+import com.hk.ReportRecon.service.JaccardSimilarityService;
+import com.hk.ReportRecon.service.LevenshteinDistanceService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -14,12 +16,14 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +49,10 @@ public class ReconController {
     private final WordVectors word2Vec;
     private Sheet sheet1;
     private Sheet sheet2;
+    @Autowired
+    private JaccardSimilarityService jaccardSimilarityService;
+    @Autowired
+    private LevenshteinDistanceService levenshteinDistanceService;
 
     ReconController () {
         word2Vec = WordVectorSerializer.readWord2VecModel(WORD2VEC_MODEL_PATH);
@@ -129,33 +137,48 @@ public class ReconController {
 
     @PostMapping("/test4")
     @CrossOrigin(origins = "http://localhost:3000")
-    public ResponseEntity<byte[]> test3(@RequestParam("map") Map<String, String> header1Header2StringMap,
-                                        @RequestParam("primaryKey1") String primaryKey1,
-                                        @RequestParam("primaryKey2") String primaryKey2) {
+    public ResponseEntity<byte[]> test3(@RequestBody Map<String, Object> requestData) {
+        String value1 = (String) requestData.remove("selectedValue1");
+        String value2 = (String) requestData.remove("selectedValue2");
+        Map<String, String> header1Header2StringMap = new HashMap<>();
+        requestData.forEach((key, value) -> {
+            if (value instanceof Map) {
+                // If the value is a nested map, extract its key-value pair and add it to the header1Header2StringMap
+                Map<?, ?> nestedMap = (Map<?, ?>) value;
+                Object nestedKey = nestedMap.get("key");
+                Object nestedValue = nestedMap.get("value");
+                if (nestedKey != null && nestedValue != null) {
+                    header1Header2StringMap.put(nestedKey.toString(), nestedValue.toString());
+                }
+            } else {
+                // Otherwise, add the key-value pair directly
+                header1Header2StringMap.put(key, value.toString());
+            }
+        });
         try (Workbook workbook3 = new XSSFWorkbook()) {
-            // create 3rd excel
-            Sheet sheet3 = workbook3.createSheet();
-
-            createHeadersFor3rdExcel(sheet3, header1Header2StringMap, sheet1);
-
-            Map<Integer, Integer> header1Header2IntMap = getIntMapFromStringMap(header1Header2StringMap, sheet1, sheet2);
-
-            addEntriesIn3rdExcel(header1Header2IntMap, sheet1, sheet3, sheet2, workbook3);
-
-            autoSizeRowsAndColumn(sheet3);
-
-            // Write the workbook to a ByteArrayOutputStream
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            workbook3.write(outputStream);
-
-            // Set the response headers
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("attachment", "excel3.xlsx");
-
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(outputStream.toByteArray());
+//            // create 3rd excel
+//            Sheet sheet3 = workbook3.createSheet();
+//
+//            createHeadersFor3rdExcel(sheet3, header1Header2StringMap, sheet1);
+//
+//            Map<Integer, Integer> header1Header2IntMap = getIntMapFromStringMap(header1Header2StringMap, sheet1, sheet2);
+//
+//            addEntriesIn3rdExcel(header1Header2IntMap, sheet1, sheet3, sheet2, workbook3);
+//
+//            autoSizeRowsAndColumn(sheet3);
+//
+//            // Write the workbook to a ByteArrayOutputStream
+//            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//            workbook3.write(outputStream);
+//
+//            // Set the response headers
+//            HttpHeaders headers = new HttpHeaders();
+//            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+//            headers.setContentDispositionFormData("attachment", "excel3.xlsx");
+//
+//            return ResponseEntity.ok()
+//                    .headers(headers)
+//                    .body(outputStream.toByteArray());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -225,25 +248,40 @@ public class ReconController {
 
     private void evaluateSimilarHeaderMap(List<String> excel1Headers, List<String> excel2Headers, Sheet sheet1, Sheet sheet2, Map<Integer, Integer> header1Header2IntMap, Map<String, String> header1Header2StringMap) {
         for (String header1 : excel1Headers) {
-            double maxSimilarity = 0;
-            String maxSimilarityHeader = null;
+            double maxWord2VecSimilarity = 0;
+            double maxJaccardSimilarity = 0;
+            String maxWord2VecSimilarityHeader = null;
+            String maxJaccardSimilarityHeader = null;
             for (String header2 : excel2Headers) {
                 if (header1.equals(header2)
                         || convertToShortForm(header1).equals(convertToShortForm(header2))) {
-                    maxSimilarityHeader = header2;
+                    maxWord2VecSimilarityHeader = header2;
                     break;
                 }
-                double currentSimilarity = word2Vec.similarity(header1, header2);
-                if (currentSimilarity > maxSimilarity) {
-                    maxSimilarity = currentSimilarity;
-                    maxSimilarityHeader = header2;
+                double jaccardSimilarity = jaccardSimilarityService.calculateJaccardSimilarity(header1, header2);
+                if (jaccardSimilarity > maxJaccardSimilarity) {
+                    maxJaccardSimilarity = jaccardSimilarity;
+                    maxJaccardSimilarityHeader = header2;
+                }
+
+                double word2VecSimilarity = word2Vec.similarity(header1, header2);
+                if (word2VecSimilarity > maxWord2VecSimilarity) {
+                    maxWord2VecSimilarity = word2VecSimilarity;
+                    maxWord2VecSimilarityHeader = header2;
                 }
             }
-            if (maxSimilarityHeader != null) {
+            if (maxJaccardSimilarity > 0.5) {
                 int columnNumber1 = getColumnNumber(sheet1.getRow(0), header1);
-                int columnNumber2 = getColumnNumber(sheet2.getRow(0), maxSimilarityHeader);
+                int columnNumber2 = getColumnNumber(sheet2.getRow(0), maxJaccardSimilarityHeader);
                 header1Header2IntMap.put(columnNumber1, columnNumber2);
-                header1Header2StringMap.put(header1, maxSimilarityHeader);
+                header1Header2StringMap.put(header1, maxJaccardSimilarityHeader);
+            } else {
+                if (maxWord2VecSimilarityHeader != null) {
+                    int columnNumber1 = getColumnNumber(sheet1.getRow(0), header1);
+                    int columnNumber2 = getColumnNumber(sheet2.getRow(0), maxWord2VecSimilarityHeader);
+                    header1Header2IntMap.put(columnNumber1, columnNumber2);
+                    header1Header2StringMap.put(header1, maxWord2VecSimilarityHeader);
+                }
             }
         }
     }
