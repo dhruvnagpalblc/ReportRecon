@@ -201,32 +201,66 @@ public class ReconController {
     }
 
     private static void addEntriesIn3rdExcel(Map<Integer, Integer> header1Header2IntMap, Sheet sheet1, Sheet sheet3, Sheet sheet2, Workbook workbook3) {
-        // add entries in 3rd excel
-        for (Map.Entry<Integer, Integer> entry : header1Header2IntMap.entrySet()) {
-            for (int rowIndex = 1; rowIndex <= sheet1.getLastRowNum(); rowIndex++) {
-                int excel1ColumnIndex = entry.getKey();
-                int excel2ColumnIndex = entry.getValue();
-                Row sheet3Row = sheet3.getRow(rowIndex);
-                if (sheet3Row == null) {
-                    sheet3Row = sheet3.createRow(rowIndex);
-                }
+
+        int primaryKey1 = 0;
+        int primaryKey2 = header1Header2IntMap.get(0);
+        for (int row1 = 1; row1 <= sheet1.getLastRowNum(); row1++) {
+            for (int row2 = 1; row2 <= sheet2.getLastRowNum(); row2++) {
                 DataFormatter dataFormatter = new DataFormatter();
-                Cell cell1 = sheet1.getRow(rowIndex).getCell(excel1ColumnIndex);
-                Cell cell2 = sheet2.getRow(rowIndex).getCell(excel2ColumnIndex);
+                Cell cell1 = sheet1.getRow(row1).getCell(primaryKey1);
+                Cell cell2 = sheet2.getRow(row2).getCell(primaryKey2);
                 String value1 = dataFormatter.formatCellValue(cell1);
                 String value2 = dataFormatter.formatCellValue(cell2);
-                Cell sheet3RowCell = sheet3Row.createCell(excel1ColumnIndex);
-                sheet3RowCell.setCellValue(value1 + "\n" + value2);
+                boolean matchFound = false;
 
-                CellStyle style3 = workbook3.createCellStyle();
-                Font font3 = workbook3.createFont();
                 if (value1.equals(value2)) {
-                    font3.setColor(IndexedColors.GREEN.getIndex());
-                } else {
-                    font3.setColor(IndexedColors.RED.getIndex());
+                    matchFound = true;
+                    for (Map.Entry<Integer, Integer> entry : header1Header2IntMap.entrySet()) {
+                        int excel1ColumnIndex = entry.getKey();
+                        int excel2ColumnIndex = entry.getValue();
+                        Row sheet3Row = sheet3.getRow(row1);
+                        if (sheet3Row == null) {
+                            sheet3Row = sheet3.createRow(row1);
+                        }
+                        cell1 = sheet1.getRow(row1).getCell(excel1ColumnIndex);
+                        cell2 = sheet2.getRow(row2).getCell(excel2ColumnIndex);
+                        value1 = dataFormatter.formatCellValue(cell1);
+                        value2 = dataFormatter.formatCellValue(cell2);
+                        Cell sheet3RowCell = sheet3Row.createCell(excel1ColumnIndex);
+                        sheet3RowCell.setCellValue(value1 + "\n" + value2);
+
+                        CellStyle style3 = workbook3.createCellStyle();
+                        Font font3 = workbook3.createFont();
+                        if (value1.equals(value2)) {
+                            font3.setColor(IndexedColors.GREEN.getIndex());
+                        } else {
+                            font3.setColor(IndexedColors.RED.getIndex());
+                        }
+                        style3.setFont(font3);
+                        sheet3RowCell.setCellStyle(style3);
+                    }
+                    break;
                 }
-                style3.setFont(font3);
-                sheet3RowCell.setCellStyle(style3);
+
+                if (!matchFound) {
+                    for (Map.Entry<Integer, Integer> entry : header1Header2IntMap.entrySet()) {
+                        int excel1ColumnIndex = entry.getKey();
+                        Row sheet3Row = sheet3.getRow(row1);
+                        if (sheet3Row == null) {
+                            sheet3Row = sheet3.createRow(row1);
+                        }
+                        cell1 = sheet1.getRow(row1).getCell(excel1ColumnIndex);
+                        value1 = dataFormatter.formatCellValue(cell1);
+                        Cell sheet3RowCell = sheet3Row.createCell(excel1ColumnIndex);
+                        sheet3RowCell.setCellValue(value1);
+
+                        CellStyle style3 = workbook3.createCellStyle();
+                        Font font3 = workbook3.createFont();
+                        font3.setColor(IndexedColors.BLUE.getIndex());
+                        style3.setFont(font3);
+                        sheet3RowCell.setCellStyle(style3);
+                    }
+                }
             }
         }
     }
