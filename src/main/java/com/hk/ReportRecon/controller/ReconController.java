@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ public class ReconController {
     private static final String WORD2VEC_MODEL_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/GoogleNews-vectors-negative300.bin";
     private static final String EXCEL_1_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/excel1.xlsx";
     private static final String EXCEL_2_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/excel2.xlsx";
+    private static final String EXCEL_3_PATH = "/home/dhruv.nagpal@Brightlifecare.local/Downloads/excel3.xlsx";
     private final WordVectors word2Vec;
     private Sheet sheet1;
     private Sheet sheet2;
@@ -155,7 +157,8 @@ public class ReconController {
                 header1Header2StringMap.put(key, value.toString());
             }
         });
-        try (Workbook workbook3 = new XSSFWorkbook()) {
+        try (Workbook workbook3 = new XSSFWorkbook();
+             FileOutputStream fileOut = new FileOutputStream(EXCEL_3_PATH)) {
             // create 3rd excel
             Sheet sheet3 = workbook3.createSheet();
 
@@ -170,6 +173,7 @@ public class ReconController {
             // Write the workbook to a ByteArrayOutputStream
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             workbook3.write(outputStream);
+            workbook3.write(fileOut);
 
             // Set the response headers
             HttpHeaders headers = new HttpHeaders();
