@@ -156,29 +156,29 @@ public class ReconController {
             }
         });
         try (Workbook workbook3 = new XSSFWorkbook()) {
-//            // create 3rd excel
-//            Sheet sheet3 = workbook3.createSheet();
-//
-//            createHeadersFor3rdExcel(sheet3, header1Header2StringMap, sheet1);
-//
-//            Map<Integer, Integer> header1Header2IntMap = getIntMapFromStringMap(header1Header2StringMap, sheet1, sheet2);
-//
-//            addEntriesIn3rdExcel(header1Header2IntMap, sheet1, sheet3, sheet2, workbook3);
-//
-//            autoSizeRowsAndColumn(sheet3);
-//
-//            // Write the workbook to a ByteArrayOutputStream
-//            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//            workbook3.write(outputStream);
-//
-//            // Set the response headers
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-//            headers.setContentDispositionFormData("attachment", "excel3.xlsx");
-//
-//            return ResponseEntity.ok()
-//                    .headers(headers)
-//                    .body(outputStream.toByteArray());
+            // create 3rd excel
+            Sheet sheet3 = workbook3.createSheet();
+
+            createHeadersFor3rdExcel(sheet3, header1Header2StringMap, sheet1);
+
+            Map<Integer, Integer> header1Header2IntMap = getIntMapFromStringMap(header1Header2StringMap, sheet1, sheet2);
+
+            addEntriesIn3rdExcel(header1Header2IntMap, sheet1, sheet3, sheet2, workbook3);
+
+            autoSizeRowsAndColumn(sheet3);
+
+            // Write the workbook to a ByteArrayOutputStream
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            workbook3.write(outputStream);
+
+            // Set the response headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", "excel3.xlsx");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(outputStream.toByteArray());
         } catch (Exception e) {
             e.printStackTrace();
         }
